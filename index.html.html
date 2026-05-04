@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Revenue & Segmentation Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0F1E;
+  --surface: #111827;
+  --card: #1a2234;
+  --border: rgba(99,179,237,0.12);
+  --border2: rgba(99,179,237,0.22);
+  --blue: #3B82F6;
+  --blue-light: #93C5FD;
+  --teal: #14B8A6;
+  --green: #22C55E;
+  --amber: #F59E0B;
+  --red: #EF4444;
+  --purple: #8B5CF6;
+  --text: #E2E8F0;
+  --muted: #64748B;
+  --dim: #334155;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* animated bg */
+body::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(ellipse 600px 400px at 10% 20%, rgba(59,130,246,0.07) 0%, transparent 60%),
+  radial-gradient(ellipse 500px 350px at 85% 70%, rgba(20,184,166,0.06) 0%, transparent 60%);
+  pointer-events:none;z-index:0;}
+
+.wrapper{position:relative;z-index:1;padding:2rem;}
+
+/* HEADER */
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.header-left{}
+.proj-tag{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);padding:.3rem .8rem;border-radius:4px;display:inline-block;margin-bottom:.7rem;}
+.header h1{font-size:1.5rem;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:.3rem;}
+.header-sub{font-size:.82rem;color:var(--muted);}
+.header-right{text-align:right;}
+.live-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:100px;font-size:.72rem;color:var(--green);font-weight:600;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.date-text{font-size:.75rem;color:var(--muted);margin-top:.5rem;}
+
+/* TOOL TAGS */
+.tools{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:2rem;}
+.tool{padding:.25rem .75rem;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);border-radius:4px;font-family:'DM Mono',monospace;font-size:.65rem;color:#C4B5FD;letter-spacing:.05em;}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:2rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1rem;position:relative;overflow:hidden;opacity:0;transform:translateY(16px);transition:all .5s;}
+.kpi.show{opacity:1;transform:translateY(0);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--kpi-color,var(--blue)),transparent);}
+.kpi-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.6rem;}
+.kpi-val{font-size:1.7rem;font-weight:700;color:var(--kpi-color,var(--blue));font-family:'DM Mono',monospace;line-height:1;}
+.kpi-delta{font-size:.7rem;margin-top:.4rem;color:var(--muted);}
+.kpi-delta.up{color:var(--green);}
+.kpi-delta.down{color:var(--red);}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;margin-bottom:1rem;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.grid-2b{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem;opacity:0;transform:translateY(16px);transition:all .5s;}
+.card.show{opacity:1;transform:translateY(0);}
+.card:hover{border-color:var(--border2);}
+.card-title{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1.2rem;display:flex;align-items:center;gap:.6rem;}
+.card-title span{color:var(--blue);}
+
+/* BAR CHART */
+.bar-chart{display:flex;flex-direction:column;gap:.8rem;}
+.bar-row{display:flex;align-items:center;gap.9rem;}
+.bar-label{font-size:.72rem;color:var(--muted);width:110px;flex-shrink:0;}
+.bar-track{flex:1;height:10px;background:var(--dim);border-radius:5px;overflow:hidden;position:relative;}
+.bar-fill{height:100%;border-radius:5px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+.bar-val{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text);width:50px;text-align:right;flex-shrink:0;}
+
+/* DONUT */
+.donut-wrap{display:flex;align-items:center;gap:1.5rem;}
+.donut-svg{flex-shrink:0;}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:.7rem;}
+.dl-item{display:flex;align-items:center;gap:.7rem;}
+.dl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dl-label{font-size:.75rem;color:var(--muted);flex:1;}
+.dl-val{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--text);}
+
+/* LINE CHART */
+.line-chart-wrap{position:relative;height:180px;}
+.line-svg{width:100%;height:100%;}
+.chart-label{font-size:.65rem;fill:var(--muted);}
+
+/* RETENTION TABLE */
+.ret-table{width:100%;border-collapse:collapse;}
+.ret-table th{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:.5rem .7rem;text-align:left;border-bottom:1px solid var(--border);}
+.ret-table td{font-size:.78rem;padding:.6rem .7rem;border-bottom:1px solid rgba(255,255,255,0.04);}
+.ret-table tr:last-child td{border-bottom:none;}
+.seg-badge{display:inline-block;padding:.15rem .55rem;border-radius:4px;font-size:.65rem;font-weight:600;}
+
+/* INSIGHT BOX */
+.insight{background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:.9rem 1rem;margin-top:1rem;font-size:.8rem;color:#93C5FD;line-height:1.6;}
+.insight strong{color:var(--text);display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem;}
+
+/* CHURN TIMELINE */
+.timeline{position:relative;padding-left:1.5rem;}
+.timeline::before{content:'';position:absolute;left:.4rem;top:.5rem;bottom:.5rem;width:1px;background:linear-gradient(180deg,var(--blue),var(--red));}
+.tl-item{position:relative;padding:.5rem 0 .5rem .8rem;font-size:.78rem;color:var(--muted);}
+.tl-item::before{content:'';position:absolute;left:-.85rem;top:.9rem;width:8px;height:8px;border-radius:50%;background:var(--tl-color,var(--muted));border:2px solid var(--bg);}
+.tl-item strong{color:var(--text);display:block;font-size:.82rem;}
+.tl-item.risk::before{background:var(--red);}
+.tl-item.warn::before{background:var(--amber);}
+.tl-item.ok::before{background:var(--green);}
+
+/* RLS + METRIC boxes */
+.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:1rem;}
+.metric-box{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:.9rem;}
+.mb-val{font-family:'DM Mono',monospace;font-size:1.3rem;font-weight:600;color:var(--blue);}
+.mb-label{font-size:.65rem;color:var(--muted);margin-top:.2rem;}
+
+/* FOOTER */
+.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);}
+.footer a{color:var(--blue);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="proj-tag">github.com/saivarnika/customer-segmentation</div>
+      <h1>Customer Revenue &amp; Segmentation<br>Dashboard</h1>
+      <div class="header-sub">Power BI · DAX · SQL · Python (Pandas) · Data Modelling · Row-Level Security</div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><span class="live-dot"></span> Live Report</div>
+      <div class="date-text">Dataset: 6,240 customer records · 5-page interactive report</div>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="tools">
+    <span class="tool">SQL — CTEs & Window Functions</span>
+    <span class="tool">Power BI</span>
+    <span class="tool">DAX Measures</span>
+    <span class="tool">Star Schema Modelling</span>
+    <span class="tool">Python / Pandas</span>
+    <span class="tool">Row-Level Security (RLS)</span>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi" style="--kpi-color:var(--blue)">
+      <div class="kpi-label">Total Customers</div>
+      <div class="kpi-val" data-target="6240" data-prefix="">0</div>
+      <div class="kpi-delta up">↑ 8.3% vs prior period</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--green)">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-val" data-target="4.82" data-prefix="₹" data-suffix="Cr">₹0</div>
+      <div class="kpi-delta up">↑ 12.1% YoY</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--teal)">
+      <div class="kpi-label">Avg Customer LTV</div>
+      <div class="kpi-val" data-target="7720" data-prefix="₹">₹0</div>
+      <div class="kpi-delta up">↑ 5.4% vs prior</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--amber)">
+      <div class="kpi-label">Retention Rate</div>
+      <div class="kpi-val" data-target="68" data-suffix="%">0%</div>
+      <div class="kpi-delta down">▼ drops at M3</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--red)">
+      <div class="kpi-label">Churn Risk (Mid)</div>
+      <div class="kpi-val" data-target="24" data-suffix="%">0%</div>
+      <div class="kpi-delta">Mid-value segment</div>
+    </div>
+  </div>
+
+  <!-- ROW 1 -->
+  <div class="grid-2">
+    <!-- Revenue by Segment bar -->
+    <div class="card">
+      <div class="card-title"><span>▊</span> Revenue Concentration by Segment</div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">High Value (20%)</div>
+          <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#3B82F6,#60A5FA);--w:65%"></div></div>
+          <div class="bar-val">65.0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Mid Value (35%)</div>
+          <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#14B8A6,#5EEAD4);--w:29%"></div></div>
+          <div class="bar-val">29.0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Low Value (45%)</div>
+          <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#475569,#64748B);--w:6%"></div></div>
+          <div class="bar-val">6.0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">YoY Growth (High)</div>
+          <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#22C55E,#4ADE80);--w:78%"></div></div>
+          <div class="bar-val">+18.4%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">YoY Growth (Mid)</div>
+          <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#F59E0B,#FCD34D);--w:32%"></div></div>
+          <div class="bar-val">+7.6%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Avg Order Value</div>
+          <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,#8B5CF6,#A78BFA);--w:55%"></div></div>
+          <div class="bar-val">₹2,340</div>
+        </div>
+      </div>
+      <div class="insight"><strong>Key Insight</strong>Top 20% of customers generate 65% of revenue — Pareto principle validated. Marketing ROI maximised by targeting retention within this segment exclusively.</div>
+    </div>
+
+    <!-- Donut -->
+    <div class="card">
+      <div class="card-title"><span>◉</span> Customer Segment Distribution</div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" viewBox="0 0 120 120" width="140" height="140">
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#1a2234" stroke-width="22"/>
+          <!-- segments: total circumference = 2π*45 ≈ 283 -->
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#3B82F6" stroke-width="22"
+            stroke-dasharray="0 283" stroke-dashoffset="70.75"
+            style="transition:stroke-dasharray 1.3s ease;transform:rotate(-90deg);transform-origin:60px 60px"
+            data-dash="56.6 283"/>
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#14B8A6" stroke-width="22"
+            stroke-dasharray="0 283" stroke-dashoffset="70.75"
+            style="transition:stroke-dasharray 1.5s ease;transform:rotate(-90deg);transform-origin:60px 60px"
+            data-dash="99 283" data-offset="-56.6"/>
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#475569" stroke-width="22"
+            stroke-dasharray="0 283" stroke-dashoffset="70.75"
+            style="transition:stroke-dasharray 1.7s ease;transform:rotate(-90deg);transform-origin:60px 60px"
+            data-dash="127.35 283" data-offset="-155.6"/>
+          <text x="60" y="58" text-anchor="middle" font-size="12" font-weight="700" fill="#E2E8F0" font-family="DM Mono">6,240</text>
+          <text x="60" y="71" text-anchor="middle" font-size="7" fill="#64748B" font-family="DM Sans">customers</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="dl-item"><div class="dl-dot" style="background:#3B82F6"></div><div class="dl-label">High Value</div><div class="dl-val">1,248 (20%)</div></div>
+          <div class="dl-item"><div class="dl-dot" style="background:#14B8A6"></div><div class="dl-label">Mid Value</div><div class="dl-val">2,184 (35%)</div></div>
+          <div class="dl-item"><div class="dl-dot" style="background:#475569"></div><div class="dl-label">Low Value</div><div class="dl-val">2,808 (45%)</div></div>
+          <div class="metric-row" style="grid-column:1/-1">
+            <div class="metric-box"><div class="mb-val">₹9,850</div><div class="mb-label">Avg LTV · High</div></div>
+            <div class="metric-box"><div class="mb-val">30%</div><div class="mb-label">DAX query perf gain</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="grid-3">
+    <!-- Retention curve -->
+    <div class="card" style="grid-column:span 2">
+      <div class="card-title"><span>〰</span> Retention Rate by Month Since Acquisition</div>
+      <div class="line-chart-wrap">
+        <svg class="line-svg" viewBox="0 0 560 170" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="retG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3B82F6" stop-opacity=".3"/>
+              <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="dropG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#EF4444" stop-opacity=".25"/>
+              <stop offset="100%" stop-color="#EF4444" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- grid -->
+          <line x1="40" y1="10" x2="40" y2="140" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <line x1="40" y1="140" x2="545" y2="140" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <line x1="40" y1="100" x2="545" y2="100" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="4,4"/>
+          <line x1="40" y1="60" x2="545" y2="60" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="4,4"/>
+          <!-- labels -->
+          <text x="30" y="143" class="chart-label" text-anchor="end">0%</text>
+          <text x="30" y="103" class="chart-label" text-anchor="end">50%</text>
+          <text x="30" y="63" class="chart-label" text-anchor="end">75%</text>
+          <text x="30" y="15" class="chart-label" text-anchor="end">100%</text>
+          <!-- month labels -->
+          <text x="40" y="155" class="chart-label" text-anchor="middle">M1</text>
+          <text x="120" y="155" class="chart-label" text-anchor="middle">M2</text>
+          <text x="200" y="155" class="chart-label" text-anchor="middle">M3</text>
+          <text x="280" y="155" class="chart-label" text-anchor="middle">M4</text>
+          <text x="360" y="155" class="chart-label" text-anchor="middle">M5</text>
+          <text x="440" y="155" class="chart-label" text-anchor="middle">M6</text>
+          <text x="520" y="155" class="chart-label" text-anchor="middle">M7</text>
+          <!-- area fill -->
+          <path d="M40,18 L120,22 L200,52 L280,88 L360,108 L440,118 L520,124 L520,140 L40,140 Z" fill="url(#retG)" opacity=".8"/>
+          <!-- line -->
+          <polyline points="40,18 120,22 200,52 280,88 360,108 440,118 520,124"
+            fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linejoin="round"
+            stroke-dasharray="600" stroke-dashoffset="600"
+            style="animation:drawLine 2s ease forwards .3s"/>
+          <!-- drop zone highlight -->
+          <rect x="145" y="10" width="110" height="130" fill="url(#dropG)" rx="4"/>
+          <text x="200" y="36" class="chart-label" text-anchor="middle" fill="#EF4444" font-weight="600">⚠ Critical Drop</text>
+          <text x="200" y="48" class="chart-label" text-anchor="middle" fill="#EF4444">M2 → M3: −35%</text>
+          <!-- dots -->
+          <circle cx="40" cy="18" r="4" fill="#3B82F6" stroke="#0A0F1E" stroke-width="2"/>
+          <circle cx="120" cy="22" r="4" fill="#3B82F6" stroke="#0A0F1E" stroke-width="2"/>
+          <circle cx="200" cy="52" r="5" fill="#EF4444" stroke="#0A0F1E" stroke-width="2"/>
+          <circle cx="280" cy="88" r="4" fill="#F59E0B" stroke="#0A0F1E" stroke-width="2"/>
+          <circle cx="360" cy="108" r="4" fill="#3B82F6" stroke="#0A0F1E" stroke-width="2"/>
+          <circle cx="440" cy="118" r="4" fill="#3B82F6" stroke="#0A0F1E" stroke-width="2"/>
+          <circle cx="520" cy="124" r="4" fill="#3B82F6" stroke="#0A0F1E" stroke-width="2"/>
+          <!-- values -->
+          <text x="40" y="12" class="chart-label" text-anchor="middle" fill="#3B82F6">97%</text>
+          <text x="120" y="16" class="chart-label" text-anchor="middle" fill="#3B82F6">94%</text>
+          <text x="200" y="46" class="chart-label" text-anchor="middle" fill="#EF4444" font-weight="600">62%</text>
+          <text x="280" y="82" class="chart-label" text-anchor="middle" fill="#F59E0B">51%</text>
+          <text x="360" y="102" class="chart-label" text-anchor="middle">44%</text>
+          <text x="440" y="112" class="chart-label" text-anchor="middle">40%</text>
+          <text x="520" y="118" class="chart-label" text-anchor="middle">37%</text>
+        </svg>
+      </div>
+      <div class="insight"><strong>Churn Signal Detected</strong>Retention drops sharply from 94% → 62% between Month 2 and Month 3. Recommend targeted re-engagement campaign triggered at Day 45 for all mid-value customers.</div>
+    </div>
+
+    <!-- Churn timeline -->
+    <div class="card">
+      <div class="card-title"><span>⏱</span> Customer Lifecycle Risk Points</div>
+      <div class="timeline">
+        <div class="tl-item ok"><strong>Month 1–2 · Safe Zone</strong>97–94% retention. High engagement, onboarding phase. Focus: activate repeat purchase.</div>
+        <div class="tl-item risk"><strong>Month 3 · Critical Drop ⚠</strong>Retention falls to 62%. Primary intervention window. DAX alert triggers at &lt;65%.</div>
+        <div class="tl-item warn"><strong>Month 4–5 · Recovery Phase</strong>51–44% retained. Loyalty incentives effective here. Mid-value cohort most responsive.</div>
+        <div class="tl-item"><strong>Month 6+ · Stable Residual</strong>37–40% long-term retained. These become high-value candidates in next cycle.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3 -->
+  <div class="grid-2b">
+    <!-- Segment table -->
+    <div class="card">
+      <div class="card-title"><span>≡</span> Segment Drill-Through — Key Metrics</div>
+      <table class="ret-table">
+        <thead>
+          <tr><th>Segment</th><th>Customers</th><th>Avg LTV</th><th>Revenue %</th><th>Churn Risk</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="seg-badge" style="background:rgba(59,130,246,0.15);color:#60A5FA">High</span></td>
+            <td style="font-family:'DM Mono',monospace">1,248</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--green)">₹9,850</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--blue)">65.0%</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--green)">Low (8%)</td>
+          </tr>
+          <tr>
+            <td><span class="seg-badge" style="background:rgba(20,184,166,0.15);color:#5EEAD4">Mid</span></td>
+            <td style="font-family:'DM Mono',monospace">2,184</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--amber)">₹4,210</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--teal)">29.0%</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--red)">High (24%)</td>
+          </tr>
+          <tr>
+            <td><span class="seg-badge" style="background:rgba(71,85,105,0.3);color:#94A3B8">Low</span></td>
+            <td style="font-family:'DM Mono',monospace">2,808</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--muted)">₹920</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--muted)">6.0%</td>
+            <td style="font-family:'DM Mono',monospace;color:var(--amber)">Med (16%)</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="insight" style="margin-top:.8rem"><strong>RLS Note</strong>Row-Level Security applied — each regional manager sees only their assigned customer segment. DAX query performance improved 30% by removing redundant measures.</div>
+    </div>
+
+    <!-- DAX metrics -->
+    <div class="card">
+      <div class="card-title"><span>⚡</span> DAX Measures Built — Technical Summary</div>
+      <div class="bar-chart">
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Calculated measures included in 5-page report:</div>
+        <div class="bar-row">
+          <div class="bar-label">YoY Revenue Growth</div>
+          <div class="bar-track"><div class="bar-fill" style="background:#3B82F6;--w:90%"></div></div>
+          <div class="bar-val">+12.1%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Customer LTV</div>
+          <div class="bar-track"><div class="bar-fill" style="background:#14B8A6;--w:75%"></div></div>
+          <div class="bar-val">₹7,720</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Retention Rate</div>
+          <div class="bar-track"><div class="bar-fill" style="background:#F59E0B;--w:68%"></div></div>
+          <div class="bar-val">68%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Rolling 3M Revenue</div>
+          <div class="bar-track"><div class="bar-fill" style="background:#8B5CF6;--w:82%"></div></div>
+          <div class="bar-val">₹1.38Cr</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">RLS Perf. Gain</div>
+          <div class="bar-track"><div class="bar-fill" style="background:#22C55E;--w:30%"></div></div>
+          <div class="bar-val">−30%</div>
+        </div>
+      </div>
+      <div class="insight" style="margin-top:.9rem"><strong>Business Recommendation</strong>Prioritise retention campaigns at the 3-month mark. Reallocate 40% of marketing budget to high-value segment for maximum ROI uplift.</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>Sai Varnika Devulapally · Business Analyst Portfolio · <a href="http://linkedin.com/in/saivarnikadevulapally/">LinkedIn</a></div>
+    <div><a href="https://github.com/saivarnika/customer-segmentation">github.com/saivarnika/customer-segmentation</a> · Power BI · DAX · SQL · Python</div>
+  </div>
+
+</div>
+<style>
+@keyframes drawLine{to{stroke-dashoffset:0}}
+</style>
+<script>
+// Counter animation
+function animateCounters() {
+  document.querySelectorAll('[data-target]').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    let start = 0;
+    const duration = 1500;
+    const step = (timestamp) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const val = target * ease;
+      el.textContent = prefix + (target < 10 ? val.toFixed(2) : Math.round(val).toLocaleString()) + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+// Bar animation
+function animateBars() {
+  document.querySelectorAll('.bar-fill').forEach(el => {
+    const w = getComputedStyle(el).getPropertyValue('--w') || el.style.getPropertyValue('--w');
+    setTimeout(() => { el.style.width = w; }, 200);
+  });
+}
+
+// Donut animation
+function animateDonut() {
+  document.querySelectorAll('circle[data-dash]').forEach(el => {
+    const dash = el.dataset.dash;
+    const offset = el.dataset.offset ? parseFloat(el.dataset.offset) : 0;
+    setTimeout(() => {
+      el.style.strokeDasharray = dash;
+      if (offset) el.style.strokeDashoffset = 70.75 + offset;
+    }, 400);
+  });
+}
+
+// Show cards with stagger
+const cards = document.querySelectorAll('.card,.kpi');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach((e,i) => {
+    if (e.isIntersecting) setTimeout(() => e.target.classList.add('show'), i * 80);
+  });
+}, { threshold: 0.05 });
+cards.forEach(c => obs.observe(c));
+
+window.addEventListener('load', () => {
+  setTimeout(() => { animateCounters(); animateBars(); animateDonut(); }, 300);
+});
+</script>
+</body>
+</html>
